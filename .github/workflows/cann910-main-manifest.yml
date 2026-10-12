@@ -17,7 +17,35 @@ jobs:
           - device_type: a3
           - device_type: 950
     with:
-      image: swr.cn-southwest-2.myhuaweicloud.com/base_image/dockerhub/lmsysorg/sglang:${{ github.event.inputs.tag_suffix || 'main' }}-cann9.1.0-${{ matrix.device_type }}
+      image: swr.cn-southwest-2.myhuaweicloud.com/base_image/dockerhub/lmsysorg/sglang:main-cann9.1.0-a3
+      # 与 build job 用同一份合并后的 Dockerfile
+      dockerfile: docker/npu.Dockerfile
+      build_args: |
+        SGLANG_KERNEL_NPU_TAG=2026.9.0.post9
+        CANN_VERSION=9.1.0
+        DEVICE_TYPE=${{ matrix.device_type }}
+      artifact_name: image-manifest-${{ github.event.inputs.tag_suffix || 'main' }}-cann9.1.0-${{ matrix.device_type }}
+      deploy_pages: 'true'
+
+
+jobs:
+  manifest:
+    needs: merge
+    if: ${{ github.repository == 'Ascend/sglang' }}
+    uses: ./.github/workflows/generate-image-manifest.yml
+    secrets: inherit
+    concurrency:
+      # Unique per workflow + matrix leg + tag (shared reusable manifest
+      # workflow; see release-docker-dev.yml).
+      group: manifest-deploy-${{ github.workflow }}-${{ matrix.device_type }}-${{ github.event.inputs.tag_suffix || 'main' }}
+      cancel-in-progress: false
+    strategy:
+      matrix:
+        include:
+          - device_type: a3
+          - device_type: 950
+    with:
+      image: swr.cn-southwest-2.myhuaweicloud.com/base_image/dockerhub/lmsysorg/sglang:main-cann9.1.0-950
       # 与 build job 用同一份合并后的 Dockerfile
       dockerfile: docker/npu.Dockerfile
       build_args: |
