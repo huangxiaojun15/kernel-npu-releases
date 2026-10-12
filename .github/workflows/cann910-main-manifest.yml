@@ -1,9 +1,8 @@
 name: sglang-cann910-main
 
 jobs:
-  manifest:
+  manifest_a3:
     needs: merge
-    if: ${{ github.repository == 'Ascend/sglang' }}
     uses: ./.github/workflows/generate-image-manifest.yml
     secrets: inherit
     concurrency:
@@ -28,10 +27,8 @@ jobs:
       deploy_pages: 'true'
 
 
-jobs:
-  manifest:
+  manifest_950:
     needs: merge
-    if: ${{ github.repository == 'Ascend/sglang' }}
     uses: ./.github/workflows/generate-image-manifest.yml
     secrets: inherit
     concurrency:
