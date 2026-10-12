@@ -47,9 +47,18 @@ jobs:
         run: |
           bash scripts/npu_ci_install_dependency.sh --cann-version ${{ matrix.cann_version }}
 
+      - name: Clone sgl-kernel-npu source
+        run: |
+          cd "${GITHUB_WORKSPACE}/.."
+          git clone --recursive https://github.com/huangxiaojun15/sgl-kernel-npu.git sgl-kernel-npu
+          cd sgl-kernel-npu
+          git submodule update --init --recursive
+          git log -1 --oneline
+
       - name: Build SGL-Kernel-NPU for 910b/a3
         if: matrix.npu_hardware != '950'
         run: |
+          cd "${GITHUB_WORKSPACE}/../sgl-kernel-npu"
           env -i PATH=${PATH} bash --login -c "
             export LD_LIBRARY_PATH=${ASCEND_HOME_PATH}/runtime/lib64/stub:${LD_LIBRARY_PATH} && \
             ./build.sh -a kernels
@@ -58,6 +67,7 @@ jobs:
       - name: Build SGL-Kernel-NPU for 950
         if: matrix.npu_hardware == '950'
         run: |
+          cd "${GITHUB_WORKSPACE}/../sgl-kernel-npu"
           env -i PATH=${PATH} bash --login -c "
             export LD_LIBRARY_PATH=${ASCEND_HOME_PATH}/runtime/lib64/stub:${LD_LIBRARY_PATH} && \
             ./build.sh -a kernels Ascend950PR_9599
@@ -65,6 +75,7 @@ jobs:
 
       - name: Build Attentions
         run: |
+          cd "${GITHUB_WORKSPACE}/../sgl-kernel-npu"
           env -i PATH=${PATH} bash --login -c "
             export LD_LIBRARY_PATH=${ASCEND_HOME_PATH}/runtime/lib64/stub:${LD_LIBRARY_PATH} && \
             ./build.sh -a attentions
@@ -72,6 +83,7 @@ jobs:
 
       - name: Build Torch-Memory-Saver
         run: |
+          cd "${GITHUB_WORKSPACE}/../sgl-kernel-npu"
           env -i PATH=${PATH} bash --login -c "
             export LD_LIBRARY_PATH=${ASCEND_HOME_PATH}/runtime/lib64/stub:${LD_LIBRARY_PATH} && \
             ./build.sh -a memory-saver
@@ -80,6 +92,7 @@ jobs:
       - name: Build DeepEP for 910b
         if: matrix.npu_hardware == '910b'
         run: |
+          cd "${GITHUB_WORKSPACE}/../sgl-kernel-npu"
           env -i PATH=${PATH} bash --login -c "
             export LD_LIBRARY_PATH=${ASCEND_HOME_PATH}/runtime/lib64/stub:${LD_LIBRARY_PATH} && \
             ./build.sh -a deepep2
@@ -88,6 +101,7 @@ jobs:
       - name: Build DeepEP for a3
         if: matrix.npu_hardware == 'a3'
         run: |
+          cd "${GITHUB_WORKSPACE}/../sgl-kernel-npu"
           env -i PATH=${PATH} bash --login -c "
             export LD_LIBRARY_PATH=${ASCEND_HOME_PATH}/runtime/lib64/stub:${LD_LIBRARY_PATH} && \
             ./build.sh -a deepep
@@ -96,6 +110,7 @@ jobs:
       - name: Build DeepEP for 950
         if: matrix.npu_hardware == '950'
         run: |
+          cd "${GITHUB_WORKSPACE}/../sgl-kernel-npu"
           env -i PATH=${PATH} bash --login -c "
             export LD_LIBRARY_PATH=${ASCEND_HOME_PATH}/runtime/lib64/stub:${LD_LIBRARY_PATH} && \
             ./build.sh -a deepep Ascend950
@@ -106,7 +121,7 @@ jobs:
           TORCH_VERSION=$(python3 -c "import torch; print(torch.__version__)" | awk -F'+' '{print $1}')
           PYTHON_VERSION=$(python3 -c "import platform; print(platform.python_version())" | awk -F'.' '{print $1$2}')
           PACKAGE_NAME="sgl-kernel-npu-${{ github.event.release.tag_name }}-torch${TORCH_VERSION}-py${PYTHON_VERSION}-cann${{ matrix.cann_version }}-${{ matrix.npu_hardware }}-${{ matrix.arch }}.zip"
-          cd output/
+          cd "${GITHUB_WORKSPACE}/../sgl-kernel-npu/output"
           zip -v ${PACKAGE_NAME} ./*.whl
           ls -al
 
@@ -116,7 +131,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: ./output/*.zip
+          files: ../sgl-kernel-npu/output/*.zip
 
   build-ops-transformer:
     defaults:
