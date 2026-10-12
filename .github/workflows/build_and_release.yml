@@ -50,7 +50,7 @@ jobs:
       - name: Clone sgl-kernel-npu source
         run: |
           cd "${GITHUB_WORKSPACE}/.."
-          git clone --recursive https://github.com/huangxiaojun15/sgl-kernel-npu.git sgl-kernel-npu
+          git clone --recursive https://github.com/sgl-project/sgl-kernel-npu.git sgl-kernel-npu
           cd sgl-kernel-npu
           git submodule update --init --recursive
           git log -1 --oneline
