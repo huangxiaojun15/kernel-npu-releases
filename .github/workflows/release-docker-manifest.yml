@@ -184,7 +184,7 @@ jobs:
     needs: [archive-a3, archive-950]
     # 哪怕其中一个 job 失败，也把成功的那个归档进去
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04-arm
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
