@@ -179,27 +179,30 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  # --------------------------------------------------- 汇总：写回数据文件并发布
   publish:
     needs: [archive-a3, archive-950]
     # 手动取消时不跑；某个 archive 失败时照样发布成功的那份
     if: ${{ !cancelled() }}
-    runs-on: ubuntu-22.04-arm
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0            # 需要完整历史，才能在重试里 reset 到最新 main
 
-      # ⚠️ 这里不能用 merge-multiple：两个 artifact 里的文件都叫 image-manifest.json，
-      # 合并到同一个目录会互相覆盖（这就是 a3 记录丢失的原因）。
-      # 不加 merge-multiple 时，每个 artifact 会解到各自的子目录：
-      #   manifests-in/manifest-a3/image-manifest.json
-      #   manifests-in/manifest-950/image-manifest.json
+      # ⚠️ 不能用 merge-multiple：两个 artifact 里的文件都叫 image-manifest.json，
+      # 合并到同一个目录会互相覆盖。不加时各 artifact 解到自己的子目录。
       - name: Download all manifests
         uses: actions/download-artifact@v4
         with:
           pattern: manifest-*
           path: manifests-in
 
-      - name: Upsert into docs/manifests/manifests.json
+      # 读-改-写必须基于「远端最新」的文件：
+      # 每次尝试都先 fetch + reset 到 origin/main，再重新 upsert（幂等），最后提交推送。
+      # 这样即使别人同时往 main 推了东西，也只是重试一次，不会 rebase 冲突。
+      - name: Upsert and commit back to main
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -209,25 +212,25 @@ jobs:
             echo "::error::没有拿到任何清单（两个 archive job 都失败了？）"
             exit 1
           fi
-          for f in "${files[@]}"; do
-            python3 .github/workflows/upsert_manifest.py \
-              docs/manifests/manifests.json "$f"
-          done
 
-      - name: Commit the data file back to main
-        run: |
-          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/manifests/manifests.json
-          git commit -m "chore(pages): nightly image manifests [skip ci]" --allow-empty
-          for attempt in 1 2 3; do
-            if git push; then
-              echo "已回写 main，剩下的交给 GitHub 按 push 重建 Pages"
+
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "${GITHUB_REF_NAME}"
+            git reset --hard "origin/${GITHUB_REF_NAME}"
+            for f in "${files[@]}"; do
+              python3 .github/workflows/upsert_manifest.py \
+                docs/manifests/manifests.json "$f"
+            done
+            git add docs/manifests/manifests.json
+            git commit -m "chore(pages): nightly image manifests [skip ci]" --allow-empty
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              echo "已回写 main（第 ${attempt} 次尝试），剩下的交给 GitHub 按 push 重建 Pages"
               exit 0
             fi
-            echo "::warning::push 第 ${attempt} 次失败，拉取最新 main 后重试"
-            git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+            echo "::warning::push 第 ${attempt} 次失败，重新拉取最新 main 后再试"
+            sleep 3
           done
-          echo "::error::回写 main 失败（main 有分支保护？）"
+          echo "::error::回写 main 失败（连续 5 次都没成功）"
           exit 1
