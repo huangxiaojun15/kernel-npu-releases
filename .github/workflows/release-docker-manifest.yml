@@ -179,28 +179,32 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-  # --------------------------------------------------- 汇总：写回数据文件并发布
   publish:
     needs: [archive-a3, archive-950]
-    # 哪怕其中一个 job 失败，也把成功的那个归档进去
-    if: always()
+    # 手动取消时不跑；某个 archive 失败时照样发布成功的那份
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-22.04-arm
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ⚠️ 这里不能用 merge-multiple：两个 artifact 里的文件都叫 image-manifest.json，
+      # 合并到同一个目录会互相覆盖（这就是 a3 记录丢失的原因）。
+      # 不加 merge-multiple 时，每个 artifact 会解到各自的子目录：
+      #   manifests-in/manifest-a3/image-manifest.json
+      #   manifests-in/manifest-950/image-manifest.json
       - name: Download all manifests
         uses: actions/download-artifact@v4
         with:
           pattern: manifest-*
           path: manifests-in
-          merge-multiple: true
 
       - name: Upsert into docs/manifests/manifests.json
         run: |
           set -euo pipefail
           shopt -s nullglob
-          files=(manifests-in/*.json)
+          files=(manifests-in/*/*.json)
+          echo "共找到 ${#files[@]} 份清单：${files[*]}"
           if [ ${#files[@]} -eq 0 ]; then
             echo "::error::没有拿到任何清单（两个 archive job 都失败了？）"
             exit 1
