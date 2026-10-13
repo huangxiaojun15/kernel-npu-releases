@@ -147,7 +147,7 @@ jobs:
           docker pull "$IMAGE"
           docker run --rm -i -e SGLANG_DIR --entrypoint /bin/bash "$IMAGE" \
             -c 'python3 - "$SGLANG_DIR"' \
-            < .github/scripts/extract_image_data.py > image-data.json
+            < .github/workflows/extract_image_data.py > image-data.json
           echo "::group::image-data.json"
           cat image-data.json
           echo "::endgroup::"
@@ -160,7 +160,7 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s\n' "$BUILD_ARGS" > build-args.txt
-          python3 .github/scripts/generate_image_manifest.py \
+          python3 .github/workflows/generate_image_manifest.py \
             --image "$IMAGE" \
             --dockerfile "$DOCKERFILE" \
             --image-data image-data.json \
@@ -202,7 +202,7 @@ jobs:
             exit 1
           fi
           for f in "${files[@]}"; do
-            python3 .github/scripts/upsert_manifest.py \
+            python3 .github/workflows/upsert_manifest.py \
               docs/manifests/manifests.json "$f"
           done
 
