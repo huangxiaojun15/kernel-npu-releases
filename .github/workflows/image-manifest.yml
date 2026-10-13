@@ -89,7 +89,7 @@ concurrency:
 
 jobs:
   prep:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04-arm
     outputs:
       entries: ${{ steps.parse.outputs.entries }}
     steps:
@@ -180,7 +180,7 @@ jobs:
 
   publish:
     needs: collect
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04-arm
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
