@@ -91,6 +91,7 @@ jobs:
           printf '%s\n' "$BUILD_ARGS" > build-args.txt
           python3 .github/workflows/generate_image_manifest.py \
             --image "$IMAGE" \
+            --dockerfile docker/npu.Dockerfile \
             --image-data image-data.json \
             --build-args-file build-args.txt \
             --output image-manifest.json
@@ -162,6 +163,7 @@ jobs:
           printf '%s\n' "$BUILD_ARGS" > build-args.txt
           python3 .github/workflows/generate_image_manifest.py \
             --image "$IMAGE" \
+            --dockerfile docker/npu.Dockerfile \
             --image-data image-data.json \
             --build-args-file build-args.txt \
             --output image-manifest.json
@@ -221,7 +223,7 @@ jobs:
               exit 0
             fi
             echo "::warning::push 第 ${attempt} 次失败，拉取最新 main 后重试"
-            git pull --rebase --autostash origin "${GITHUB_REFNAME}"
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
           done
           echo "::error::回写 main 失败（main 有分支保护？）"
           exit 1
