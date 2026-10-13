@@ -31,7 +31,7 @@ env:
 jobs:
   # ---------------------------------------------------------------- job 1: A3
   archive-a3:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04-arm
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -109,7 +109,7 @@ jobs:
 
   # ------------------------------------------------------------- job 2: A5(950)
   archive-950:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04-arm
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
