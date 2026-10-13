@@ -1,0 +1,227 @@
+name: Image Manifest Nightly
+
+# 每天凌晨 4 点（北京时间）归档 A3 / A5(950) 两个镜像的依赖清单。
+# ⚠️ GitHub 的 cron 是 UTC：20:00 UTC = 次日 04:00 北京时间（CST, UTC+8）。
+#    如果你写成 '0 4 * * *'，那会是北京时间中午 12:00 执行。
+#
+# 两个 job 并行拉取、互不影响；最后 publish 统一写回
+# docs/manifests/manifests.json（写回后 GitHub 按 push 自动重建 Pages）。
+#
+# 手动测试：Actions -> Image Manifest Nightly -> Run workflow
+
+on:
+  schedule:
+    - cron: '0 20 * * *'   # 04:00 北京时间
+  workflow_dispatch:
+
+# 只需要写权限；Pages 由 GitHub 按 push 自动重建
+permissions:
+  contents: write
+
+# 和手动那个 workflow 用同一把锁，避免两个流程同时改同一个数据文件
+concurrency:
+  group: image-manifest-pages
+  cancel-in-progress: false
+
+env:
+  SWR_REGISTRY: swr.cn-southwest-2.myhuaweicloud.com
+  IMAGE_A3: swr.cn-southwest-2.myhuaweicloud.com/base_image/dockerhub/lmsysorg/sglang:main-cann9.1.0-a3
+  IMAGE_950: swr.cn-southwest-2.myhuaweicloud.com/base_image/dockerhub/lmsysorg/sglang:main-cann9.1.0-950
+
+jobs:
+  # ---------------------------------------------------------------- job 1: A3
+  archive-a3:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune -af || true
+          df -h /
+
+      # 没配 secret 就按公开镜像匿名拉；配了就登录。
+      # 注意：secrets 上下文不能用在 step 级 if 里（官方文档的可用性表里没有），
+      # 所以这里用 shell 判断，而不是 if: ${{ secrets.X != '' }}。
+      - name: Log in to SWR (skip when no credentials)
+        env:
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${REGISTRY_USERNAME:-}" ] || [ -z "${REGISTRY_PASSWORD:-}" ]; then
+            echo "未配置 REGISTRY_USERNAME / REGISTRY_PASSWORD，按公开镜像匿名拉取"
+            exit 0
+          fi
+          echo "$REGISTRY_PASSWORD" | docker login "$SWR_REGISTRY" \
+            -u "$REGISTRY_USERNAME" --password-stdin
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Pull image and collect what is actually inside
+        env:
+          IMAGE: ${{ env.IMAGE_A3 }}
+          SGLANG_DIR: /sgl-workspace/sglang
+        run: |
+          set -euo pipefail
+          docker pull "$IMAGE"
+          docker run --rm -i -e SGLANG_DIR --entrypoint /bin/bash "$IMAGE" \
+            -c 'python3 - "$SGLANG_DIR"' \
+            < .github/workflows/extract_image_data.py > image-data.json
+          echo "::group::image-data.json"
+          cat image-data.json
+          echo "::endgroup::"
+
+      - name: Generate manifest
+        env:
+          IMAGE: ${{ env.IMAGE_A3 }}
+          # 这些是构建该 tag 时实际使用的参数（取自 Ascend 的构建流程）；
+          # 换 tag 时记得同步改。想让它们出现在看板「构建参数」卡片里，
+          # 需要按 README 给 generate_image_manifest.py 打那两行补丁。
+          BUILD_ARGS: |
+            CANN_VERSION=9.1.0
+            DEVICE_TYPE=a3
+            SGLANG_KERNEL_NPU_TAG=2026.9.0.post9
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$BUILD_ARGS" > build-args.txt
+          python3 .github/workflows/generate_image_manifest.py \
+            --image "$IMAGE" \
+            --image-data image-data.json \
+            --build-args-file build-args.txt \
+            --output image-manifest.json
+          echo "::group::image-manifest.json"
+          cat image-manifest.json
+          echo "::endgroup::"
+
+      - name: Upload manifest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: manifest-a3
+          path: image-manifest.json
+          if-no-files-found: error
+          retention-days: 30
+
+  # ------------------------------------------------------------- job 2: A5(950)
+  archive-950:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune -af || true
+          df -h /
+
+      - name: Log in to SWR (skip when no credentials)
+        env:
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${REGISTRY_USERNAME:-}" ] || [ -z "${REGISTRY_PASSWORD:-}" ]; then
+            echo "未配置 REGISTRY_USERNAME / REGISTRY_PASSWORD，按公开镜像匿名拉取"
+            exit 0
+          fi
+          echo "$REGISTRY_PASSWORD" | docker login "$SWR_REGISTRY" \
+            -u "$REGISTRY_USERNAME" --password-stdin
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Pull image and collect what is actually inside
+        env:
+          IMAGE: ${{ env.IMAGE_950 }}
+          SGLANG_DIR: /sgl-workspace/sglang
+        run: |
+          set -euo pipefail
+          docker pull "$IMAGE"
+          docker run --rm -i -e SGLANG_DIR --entrypoint /bin/bash "$IMAGE" \
+            -c 'python3 - "$SGLANG_DIR"' \
+            < .github/workflows/extract_image_data.py > image-data.json
+          echo "::group::image-data.json"
+          cat image-data.json
+          echo "::endgroup::"
+
+      - name: Generate manifest
+        env:
+          IMAGE: ${{ env.IMAGE_950 }}
+          BUILD_ARGS: |
+            CANN_VERSION=9.1.0
+            DEVICE_TYPE=950
+            SGLANG_KERNEL_NPU_TAG=2026.9.0.post9
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$BUILD_ARGS" > build-args.txt
+          python3 .github/workflows/generate_image_manifest.py \
+            --image "$IMAGE" \
+            --image-data image-data.json \
+            --build-args-file build-args.txt \
+            --output image-manifest.json
+          echo "::group::image-manifest.json"
+          cat image-manifest.json
+          echo "::endgroup::"
+
+      - name: Upload manifest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: manifest-950
+          path: image-manifest.json
+          if-no-files-found: error
+          retention-days: 30
+
+  # --------------------------------------------------- 汇总：写回数据文件并发布
+  publish:
+    needs: [archive-a3, archive-950]
+    # 哪怕其中一个 job 失败，也把成功的那个归档进去
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all manifests
+        uses: actions/download-artifact@v4
+        with:
+          pattern: manifest-*
+          path: manifests-in
+          merge-multiple: true
+
+      - name: Upsert into docs/manifests/manifests.json
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(manifests-in/*.json)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::没有拿到任何清单（两个 archive job 都失败了？）"
+            exit 1
+          fi
+          for f in "${files[@]}"; do
+            python3 .github/workflows/upsert_manifest.py \
+              docs/manifests/manifests.json "$f"
+          done
+
+      - name: Commit the data file back to main
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/manifests/manifests.json
+          git commit -m "chore(pages): nightly image manifests [skip ci]" --allow-empty
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "已回写 main，剩下的交给 GitHub 按 push 重建 Pages"
+              exit 0
+            fi
+            echo "::warning::push 第 ${attempt} 次失败，拉取最新 main 后重试"
+            git pull --rebase --autostash origin "${GITHUB_REFNAME}"
+          done
+          echo "::error::回写 main 失败（main 有分支保护？）"
+          exit 1
