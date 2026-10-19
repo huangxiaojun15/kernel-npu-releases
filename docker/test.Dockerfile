@@ -1,3 +1,4 @@
+#关于基础镜像版本配套
 ARG CANN_VERSION=9.1.0
 ARG DEVICE_TYPE=950
 ARG OS=ubuntu22.04
