@@ -2,72 +2,9 @@
   "manifests": [
     {
       "schema_version": 1,
-      "image": "swr.cn-southwest-2.myhuaweicloud.com/base_image/dockerhub/lmsysorg/sglang:main-cann9.1.0-a3",
-      "dockerfile": "docker/npu.Dockerfile",
-      "generated_at": "2026-10-21T23:08:09.055579+00:00",
-      "build_args": {
-        "CANN_VERSION": "9.1.0",
-        "DEVICE_TYPE": "a3",
-        "OS": "ubuntu22.04",
-        "PYTHON_VERSION": "py3.12",
-        "arch": "",
-        "PIP_INDEX_URL": "https://pypi.org/simple/",
-        "PYTORCH_VERSION": "2.10.0",
-        "TORCHVISION_VERSION": "0.25.0",
-        "TORCHAUDIO_VERSION": "2.10.0",
-        "TORCH_NPU_VERSION": "2.10.0.post6",
-        "TORCH_NPU_INDEX_URL": "https://ascend.devcloud.huaweicloud.com/pypi/simple/",
-        "SGLANG_TAG": "main",
-        "ASCEND_CANN_PATH": "/usr/local/Ascend/ascend-toolkit",
-        "SGLANG_KERNEL_NPU_TAG": "2026.9.0.post9",
-        "PIP_INSTALL": "python3 -m pip install --no-cache-dir",
-        "MODELSCOPE_VERSION": "",
-        "EVALSCOPE_VERSION": "",
-        "MF_VERSION": "1.2.1",
-        "ZBAL_VERSION_950": "1.2.21004.post1",
-        "ZBAL_VERSION_A3": "1.1.3"
-      },
-      "git_clones": [
-        {
-          "remote": "https://github.com/sgl-project/sglang",
-          "branch": "main",
-          "dir": "/sgl-workspace/sglang"
-        }
-      ],
-      "declared_pip_pins": [
-        "torch==2.10.0",
-        "memfabric-hybrid==1.2.1",
-        "memcache-hybrid==1.2.1",
-        "memfabric-zbal==1.2.21004.post1",
-        "memfabric-zbal==1.1.3",
-        "torchvision==0.25.0",
-        "torchaudio==2.10.0",
-        "torch-npu==2.10.0.post6",
-        "wheel==0.45.1"
-      ],
-      "sglang": {
-        "dir": "/sgl-workspace/sglang",
-        "remote": "https://github.com/sgl-project/sglang",
-        "branch": "main",
-        "commit": "8e3e2980db83a1b020a6d273a2b653891af81bfc",
-        "describe": "gateway-v0.3.1-11835-g8e3e2980db",
-        "commit_date": "2026-10-21T22:09:04+08:00"
-      },
-      "os": {
-        "distro": "Ubuntu 22.04.5 LTS",
-        "kernel": "6.8.0-1064-azure",
-        "arch": "aarch64"
-      },
-      "cann": {
-        "toolkit": "latest set_env.sh",
-        "version_files": ""
-      }
-    },
-    {
-      "schema_version": 1,
       "image": "swr.cn-southwest-2.myhuaweicloud.com/base_image/dockerhub/lmsysorg/sglang:main-cann9.1.0-950",
       "dockerfile": "docker/npu.Dockerfile",
-      "generated_at": "2026-10-21T23:05:58.751401+00:00",
+      "generated_at": "2026-10-22T23:06:23.102223+00:00",
       "build_args": {
         "CANN_VERSION": "9.1.0",
         "DEVICE_TYPE": "950",
@@ -112,9 +49,72 @@
         "dir": "/sgl-workspace/sglang",
         "remote": "https://github.com/sgl-project/sglang",
         "branch": "main",
-        "commit": "8e3e2980db83a1b020a6d273a2b653891af81bfc",
-        "describe": "gateway-v0.3.1-11835-g8e3e2980db",
-        "commit_date": "2026-10-21T22:09:04+08:00"
+        "commit": "afd0d7b47b40448341036cea37294fcf3cb2aabd",
+        "describe": "gateway-v0.3.1-11933-gafd0d7b47b",
+        "commit_date": "2026-10-22T21:30:45+08:00"
+      },
+      "os": {
+        "distro": "Ubuntu 22.04.5 LTS",
+        "kernel": "6.8.0-1064-azure",
+        "arch": "aarch64"
+      },
+      "cann": {
+        "toolkit": "latest set_env.sh",
+        "version_files": ""
+      }
+    },
+    {
+      "schema_version": 1,
+      "image": "swr.cn-southwest-2.myhuaweicloud.com/base_image/dockerhub/lmsysorg/sglang:main-cann9.1.0-a3",
+      "dockerfile": "docker/npu.Dockerfile",
+      "generated_at": "2026-10-22T23:04:06.463573+00:00",
+      "build_args": {
+        "CANN_VERSION": "9.1.0",
+        "DEVICE_TYPE": "a3",
+        "OS": "ubuntu22.04",
+        "PYTHON_VERSION": "py3.12",
+        "arch": "",
+        "PIP_INDEX_URL": "https://pypi.org/simple/",
+        "PYTORCH_VERSION": "2.10.0",
+        "TORCHVISION_VERSION": "0.25.0",
+        "TORCHAUDIO_VERSION": "2.10.0",
+        "TORCH_NPU_VERSION": "2.10.0.post6",
+        "TORCH_NPU_INDEX_URL": "https://ascend.devcloud.huaweicloud.com/pypi/simple/",
+        "SGLANG_TAG": "main",
+        "ASCEND_CANN_PATH": "/usr/local/Ascend/ascend-toolkit",
+        "SGLANG_KERNEL_NPU_TAG": "2026.9.0.post9",
+        "PIP_INSTALL": "python3 -m pip install --no-cache-dir",
+        "MODELSCOPE_VERSION": "",
+        "EVALSCOPE_VERSION": "",
+        "MF_VERSION": "1.2.1",
+        "ZBAL_VERSION_950": "1.2.21004.post1",
+        "ZBAL_VERSION_A3": "1.1.3"
+      },
+      "git_clones": [
+        {
+          "remote": "https://github.com/sgl-project/sglang",
+          "branch": "main",
+          "dir": "/sgl-workspace/sglang"
+        }
+      ],
+      "declared_pip_pins": [
+        "torch==2.10.0",
+        "memfabric-hybrid==1.2.1",
+        "memcache-hybrid==1.2.1",
+        "memfabric-zbal==1.2.21004.post1",
+        "memfabric-zbal==1.1.3",
+        "torchvision==0.25.0",
+        "torchaudio==2.10.0",
+        "torch-npu==2.10.0.post6",
+        "wheel==0.45.1"
+      ],
+      "sglang": {
+        "dir": "/sgl-workspace/sglang",
+        "remote": "https://github.com/sgl-project/sglang",
+        "branch": "main",
+        "commit": "afd0d7b47b40448341036cea37294fcf3cb2aabd",
+        "describe": "gateway-v0.3.1-11933-gafd0d7b47b",
+        "commit_date": "2026-10-22T21:30:45+08:00"
       },
       "os": {
         "distro": "Ubuntu 22.04.5 LTS",
